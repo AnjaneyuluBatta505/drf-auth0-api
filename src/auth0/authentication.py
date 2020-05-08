@@ -1,16 +1,18 @@
 import requests
-
-from jose import jwt
-
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from jose import jwt
 from rest_framework import exceptions
 from rest_framework.authentication import (BaseAuthentication,
                                            get_authorization_header)
 
+from todo.models import Auth0User
+
 User = get_user_model()
 
+
 def is_valid_auth0token(token):
+    # TODO: remove request and make the `json` file as part of the project to save the request time
     resp = requests.get('https://'+settings.AUTH0_DOMAIN +
                         '/.well-known/jwks.json')
     jwks = resp.json()
@@ -84,16 +86,20 @@ class Auth0TokenAuthentication(BaseAuthentication):
 
     def authenticate_credentials(self, token):
         payload, is_valid = is_valid_auth0token(token)
-        print(payload)
-
         if not is_valid:
             raise exceptions.AuthenticationFailed(self.err_msg)
 
-        user_data = get_auth0_user_data(token)
-        email = user_data.get('email')
-        if not email:
-            raise exceptions.AuthenticationFailed(self.err_msg)
-        
-        user, _ = User.objects.get_or_create(email=email)
-        user.auth0_data = user_data
-        return user, token
+        auth0_username = payload['sub'].split('|')[1]
+        auth0_user = Auth0User.objects.filter(username=auth0_username).last()
+        if not auth0_user:
+            user_data = get_auth0_user_data(token)
+            email = user_data.get('email')
+            if not email:
+                raise exceptions.AuthenticationFailed(self.err_msg)
+
+            user, _ = User.objects.get_or_create(email=email)
+            auth0_user = Auth0User.objects.create(
+                username=auth0_username, user=user)
+            auth0_user.user = user
+            auth0_user.save()
+        return auth0_user.user, token
