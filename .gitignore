@@ -1,3 +1,4 @@
 *.env
 *.pyc
-
+src/.vscode/*
+*db.sqlite3
