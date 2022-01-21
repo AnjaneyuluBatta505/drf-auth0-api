@@ -9,7 +9,7 @@ django-rest-framework==0.1.0
 djangorestframework==3.11.0
 ecdsa==0.15
 idna==2.9
-ipython==7.14.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.17.0
 parso==0.7.0
